@@ -59,8 +59,15 @@ const port = 8080;
 //   taskStatus: 'todo',
 // },]
 
-const initialData = {
+let initialData = {
+  nextTaskId: 9,
   tasks: {
+    newTask: {
+      title: '',
+      content: '',
+      assign: '',
+      status: '',
+    },
     task_1: {
       id: 'task_1',
       title: 'Task 1',
@@ -127,17 +134,56 @@ const initialData = {
       status: 'done',
       tasksId: ['task_7', 'task_8',],
     },
+    todo: 'column_1',
+    pr: 'column_2',
+    progress: 'column_3',
+    done: 'column_4',
   },
   columnOrder: ['column_1', 'column_2', 'column_3', 'column_4'],
 };
 
-app.use(cors())
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
 app.get('/', (req, res) => {
   res.send('Hello World!')
 })
 
 app.get('/tasks', (req, res) => {
+  setTimeout(() => { res.json(initialData) }, 100)
+})
+
+app.post('/addTask', (req, res) => {
+  console.log(req, res);
+  const { taskData, statusData } = req.body;
+  const newTaskId = `task_${initialData.nextTaskId}`;
+  initialData.tasks[newTaskId] = taskData;
+  initialData.tasks[newTaskId].id = newTaskId;
+  initialData.columns[initialData.columns[statusData]].tasksId.push(newTaskId);
+  initialData.nextTaskId = initialData.nextTaskId + 1;
   setTimeout(() => { res.json(initialData) }, 1000)
+})
+
+app.post('/updateTask', (req, res) => {
+  const newData = { ...initialData };
+  const { draggableId, source, destination } = req.body;
+  const sourceArray = newData.columns[source.droppableId].tasksId;
+  const destinationArray = newData.columns[destination.droppableId].tasksId;
+  sourceArray.splice(source.index, 1);
+  destinationArray.splice(destination.index, 0, draggableId);
+  initialData = newData;
+  // setTimeout(() => { res.json(initialData) }, 1000)
+})
+
+app.post('/delTask', (req, res) => {
+  const { id, columnId } = req.body;
+  const newData = { ...initialData };
+  const idIndex = newData.columns[columnId].tasksId.indexOf(id);
+  delete newData.tasks[id];
+  newData.columns[columnId].tasksId.splice(idIndex, 1);
+  initialData = newData;
+  setTimeout(() => { res.json(columnId) }, 1000)
 })
 
 app.listen(port, () => {
